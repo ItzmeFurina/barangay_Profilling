@@ -1,0 +1,13 @@
+
+# Deny all direct web access to this folder.
+Require all denied
+
+# Allow the event feed endpoint.
+<Files "event_feed_json.php">
+    Require all granted
+</Files>
+
+# Explicitly deny direct access to private database configuration.
+<Files "private_config.php">
+    Require all denied
+</Files>

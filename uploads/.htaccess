@@ -1,0 +1,5 @@
+# Verification documents may contain personal information (photos of
+# barangay IDs). Nothing in this folder should ever be reachable by a
+# direct URL - only server-side PHP, after checking the requester's
+# permissions, should ever read these files.
+Require all denied

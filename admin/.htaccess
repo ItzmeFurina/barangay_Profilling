@@ -1,0 +1,7 @@
+
+# Restrict the admin/staff portal to the administrator's public IP.
+# Only requests from this IP can access the admin portal.
+
+<RequireAny>
+    Require ip 160.30.166.87
+</RequireAny>

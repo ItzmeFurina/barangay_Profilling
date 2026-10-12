@@ -1,0 +1,10 @@
+# Never serve schema/migrations/scripts over HTTP.
+# The SQL files and create_admin.php are CLI/maintenance only.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

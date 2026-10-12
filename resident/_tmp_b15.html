@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>My Benefits - Barangay 420</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>
+/* Scroll choreography - IntersectionObserver adds .is-in to cards as
+   they enter the viewport (CSS handles the fade-up; the hidden state
+   only applies under html.js, so a no-JS page renders fully). */
+(function () {
+  document.documentElement.classList.add('js');
+  var SEL = '.home-heading,.hero,.steps,.programs-preview,.auth-card,.dashboard-section,.event-card,.program-card,.member-fieldset,.benefit-card,.benefit-empty,.org-row,.profile-hero,.census-section,.about-card,.stat-card,.stat-card-compact,.steps-band';
+  var els = document.querySelectorAll(SEL);
+  function showAll() {
+    for (var i = 0; i < els.length; i++) els[i].classList.add('is-in');
+  }
+  if (!('IntersectionObserver' in window) || !els.length) { showAll(); return; }
+  var io = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) {
+        entries[i].target.classList.add('is-in');
+        io.unobserve(entries[i].target);
+      }
+    }
+  }, { rootMargin: '0px 0px -7% 0px', threshold: 0.06 });
+  for (var i = 0; i < els.length; i++) io.observe(els[i]);
+  setTimeout(showAll, 4000);
+})();
+/* Ledger count-up - .stat-number / .benefit-summary-count figures tick
+   up once as they enter the viewport. Reads the server-rendered number,
+   so a no-JS page still shows the full figure. */
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+  var els = document.querySelectorAll('.stat-number, .benefit-summary-count');
+  if (!els.length) return;
+  var started = false;
+  function run() {
+    if (started) return;
+    started = true;
+    for (var i = 0; i < els.length; i++) {
+      (function (el) {
+        var m = el.textContent.match(/[\d,]+/);
+        if (!m) return;
+        var target = parseInt(m[0].replace(/,/g, ''), 10);
+        if (isNaN(target)) return;
+        var t0 = performance.now(), dur = 900;
+        function tick(now) {
+          var p = Math.min(1, (now - t0) / dur);
+          var eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = Math.round(target * eased).toLocaleString();
+          if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      })(els[i]);
+    }
+  }
+  if (!('IntersectionObserver' in window)) { run(); return; }
+  var io = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) { run(); io.disconnect(); return; }
+    }
+  }, { threshold: 0.3 });
+  io.observe(els[0]);
+})();
+</script>
+<style>
+/* Kept inline (in addition to assets/css/style.css) so the status-detail
+   popup always renders and behaves correctly even if the shared
+   stylesheet is out of date or fails to load on a given deployment.
+   Values match the shared token set in assets/css/style.css. */
+.status-badge-clickable {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+}
+.status-new-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #C0392B;
+  flex-shrink: 0;
+}
+.why-check {
+  margin-top: 10px;
+  background: #F4F1EA;
+  border: 1px solid #E3DED0;
+  border-radius: 10px;
+}
+.why-check > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0B2E5C;
+  padding: 9px 12px;
+  user-select: none;
+}
+.why-check-all > summary { color: #3C5470; }
+.why-check > summary:focus-visible { outline: 2px solid #1B5FA8; outline-offset: 1px; border-radius: 8px; }
+.why-list { margin: 0; padding: 0 12px 10px 28px; font-size: 13px; color: #16233A; }
+.why-list li { margin: 3px 0; }
+.why-member { margin-top: 12px; }
+.why-member:first-child { margin-top: 4px; }
+.why-pass-ok { color: #2B5F1F; font-weight: 600; }
+.why-pass-no { color: #9A2C2C; font-weight: 600; }
+.why-blocked {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #FCEBEB;
+  color: #9A2C2C;
+  vertical-align: 1px;
+}
+.event-modal-backdrop {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(11, 46, 92, 0.55);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 20px);
+}
+.event-modal-backdrop.is-open { display: flex; }
+.event-modal {
+  background: #fff;
+  border-radius: 16px;
+  max-width: min(480px, calc(100vw - 40px));
+  width: 100%;
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 20px 22px 24px;
+  position: relative;
+  box-shadow: 0 32px 64px -24px rgba(6, 14, 28, 0.5);
+}
+.event-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted, #3C5470);
+  cursor: pointer;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.benefit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.benefit-summary-item {
+  background: #fff;
+  border: 1px solid var(--border, #D6E1EE);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  font-size: 15px;
+  color: #3C5470;
+  flex: 1 1 0;
+  min-width: min(160px, 100%);
+  max-width: 240px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 0 1px rgba(214, 225, 238, 0.6), 0 12px 32px -18px rgba(11, 46, 92, 0.2);
+}
+.benefit-summary-count { font-size: 26px; font-weight: 700; font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace; letter-spacing: -0.02em; line-height: 1.15; }
+.sum-eligible .benefit-summary-count { color: #2B5F1F; }
+.sum-existing .benefit-summary-count { color: #2B5F1F; }
+.sum-pending .benefit-summary-count { color: #7A4E10; }
+.sum-approved .benefit-summary-count { color: #0B2E5C; }
+.sum-rejected .benefit-summary-count { color: #C0392B; }
+.sum-retracted .benefit-summary-count { color: #9A6B13; }
+.sum-period .benefit-summary-count { color: #8A5A00; }
+.sum-notqual .benefit-summary-count { color: #C0392B; }
+.status-existing { background: #E8F5E9; color: #2B5F1F; border: 1.5px solid #A5D6A7; }
+.status-source { background: #EEF3FA; color: #0B2E5C; border: 1.5px solid #C9D9EE; font-style: italic; }
+.benefit-none {
+  background: #fff;
+  border: 1px dashed var(--border, #D6E1EE);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 12px;
+  font-size: 15px;
+  color: #3C5470;
+}
+.benefit-meta { font-size: 13px; font-weight: 600; color: #3C5470; margin-top: 8px; }
+.criteria-table { width: calc(100% - 24px); margin: 0 12px 12px; border-collapse: collapse; font-size: 13px; }
+/* Inside a Not-qualified program block the table sits directly on the card,
+   so it takes the card's own padding instead of the details-box inset. */
+.nq-program > .criteria-table { width: 100%; margin: 6px 0 0; }
+.criteria-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #3C5470;
+  border-bottom: 1px solid #E3DED0;
+  padding: 7px 8px;
+}
+.criteria-table td { padding: 8px; border-bottom: 1px solid #F0EBDE; vertical-align: top; color: #16233A; }
+.criteria-table tr:last-child td { border-bottom: none; }
+.criteria-reason { display: block; font-size: 12px; font-weight: 400; color: #3C5470; }
+.nq-member-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.nq-member-name { font-size: 16px; font-weight: 700; color: #16233A; }
+.nq-program { border-top: 1px solid #EFEAE0; padding-top: 12px; margin-top: 12px; }
+.nq-program:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.nq-program-name { font-size: 15px; font-weight: 600; color: #0B2E5C; }
+.nq-reason { font-size: 14px; color: #9A2C2C; margin: 4px 0 0; }
+.nq-date { font-size: 12px; color: #3C5470; margin-top: 6px; }
+.nq-collapsed { margin-top: 8px; }
+.benefit-card {
+  background: #fff;
+  border: 1px solid var(--border, #D6E1EE);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 12px;
+}
+.benefit-card:first-child { margin-top: 0; }
+.benefit-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.benefit-name { font-size: 17px; font-weight: 600; color: #16233A; }
+.benefit-member { font-size: 14px; color: #3C5470; margin-top: 2px; }
+.benefit-desc { font-size: 15px; color: #3C5470; margin-top: 8px; }
+.benefit-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.btn-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #E8A93D;
+  color: #4A2F04;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 6px 6px 6px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 16px -10px rgba(232, 169, 61, 0.6);
+  transition: background-color 0.4s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.btn-apply::after {
+  content: '';
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(74, 47, 4, 0.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A2F04' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h13'/%3E%3Cpath d='m13 6 6 6-6 6'/%3E%3C/svg%3E") center / 12px no-repeat;
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.btn-apply:hover { background: #C98E24; transform: translateY(-1px); }
+.btn-apply:hover::after { transform: translateX(2px); }
+.btn-apply:active { transform: translateY(0) scale(0.97); }
+.btn-apply:active::after { transform: none; }
+.benefit-empty {
+  text-align: center;
+  padding: 44px 24px;
+  margin-top: 12px;
+  background: #fff;
+  border: 1px dashed var(--border, #D6E1EE);
+  border-radius: 16px;
+}
+.benefit-empty-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  background: #E8A93D;
+  color: #4A2F04;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.benefit-empty h3 { font-size: 18px; color: #16233A; margin: 0; }
+.benefit-empty p {
+  color: #3C5470;
+  font-size: 15px;
+  max-width: 540px;
+  margin: 8px auto 0;
+  line-height: 1.5;
+}
+/* Official decision stamps - the rubber stamp of a barangay document */
+.stamp {
+  display: inline-block;
+  padding: 4px 11px 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-2deg);
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px currentColor;
+  background: #fff;
+}
+.stamp-approved { color: #2B5F1F; }
+.stamp-rejected { color: #9A2C2C; }
+.stamp-retracted { color: #8A5A00; }
+@media (prefers-reduced-motion: reduce) { .stamp { transform: none; } }
+</style>
+</head>
+<body>
+<style>
+/* Kept inline (in addition to assets/css/style.css) so the sidebar always
+   renders and behaves correctly even if the shared stylesheet is out of
+   date or fails to load on a given deployment. Values match the shared
+   token set in assets/css/style.css. */
+.resident-shell { display: flex; min-height: 100vh; min-height: 100dvh; }
+.resident-sidebar {
+  flex: 0 0 248px;
+  background: #0B2E5C;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.resident-sidebar .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 16px;
+  text-decoration: none;
+}
+.sidebar-brand-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #E8A93D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35);
+}
+.sidebar-brand-badge img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.resident-sidebar .sidebar-brand-name { color: #fff; font-size: 18px; font-weight: 600; font-family: 'Fraunces', Georgia, serif; }
+.resident-sidebar .sidebar-brand-sub { color: #B7CBE8; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1px; }
+.resident-sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.resident-sidebar .sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #CFE0F5;
+  text-decoration: none;
+  font-size: 15.5px;
+  font-weight: 500;
+  padding: 11px 14px;
+  border-radius: 8px;
+  transition: background-color 0.25s cubic-bezier(0.32, 0.72, 0, 1), color 0.25s cubic-bezier(0.32, 0.72, 0, 1), transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.resident-sidebar .sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  background: #E8A93D;
+  transform: translateY(-50%) scaleY(0);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.resident-sidebar .sidebar-link:hover { background: rgba(255,255,255,0.07); color: #fff; transform: translateX(2px); }
+.resident-sidebar .sidebar-link.active { background: rgba(255,255,255,0.08); color: #fff; }
+.resident-sidebar .sidebar-link.active::before { opacity: 1; transform: translateY(-50%) scaleY(1); }
+.resident-sidebar .sidebar-footer { border-top: 1px solid rgba(255,255,255,0.12); padding-top: 16px; padding-bottom: 14px; margin-top: 16px; }
+.resident-sidebar .sidebar-name { color: #fff; font-size: 15.5px; margin-bottom: 10px; }
+.resident-sidebar .sidebar-logout {
+  color: #E8A93D;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1.5px solid rgba(232, 169, 61, 0.55);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: block;
+  text-align: center;
+  transition: background-color 0.25s cubic-bezier(0.32, 0.72, 0, 1), color 0.25s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.resident-sidebar .sidebar-logout:hover { background: #E8A93D; border-color: #E8A93D; color: #4A2F04; }
+.resident-sidebar .sidebar-logout-accent {
+  display: inline-block;
+  background: #E8A93D;
+  color: #4A2F04 !important;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 12px 22px;
+  border-radius: 10px;
+}
+.resident-shell-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.resident-main { flex: 1; }
+.home-heading { max-width: 1400px; margin: 0 auto; padding: 40px 24px 8px; }
+.home-heading h1 { font-size: clamp(34px, 5vw, 50px); line-height: 1.04; letter-spacing: -0.015em; }
+.home-heading p { color: #3C5470; font-size: 17.5px; max-width: 560px; line-height: 1.6; }
+.sidebar-mobilebar { display: none; }
+.sidebar-backdrop { display: none; }
+@media (max-width: 1024px) {
+  .resident-sidebar { flex: 0 0 200px; }
+  .resident-sidebar .sidebar-link { font-size: 14.5px; padding: 10px 12px; }
+  .resident-sidebar .sidebar-brand-name { font-size: 16px; }
+}
+@media (max-width: 760px) {
+  .sidebar-mobilebar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: #0B2E5C;
+    position: sticky; top: 0;
+    z-index: 92;
+  }
+  .sidebar-mobile-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .sidebar-mobile-brand .sidebar-brand-badge { width: 34px; height: 34px; }
+  .sidebar-mobile-brand .sidebar-brand-name { font-size: 16px; }
+  .sidebar-toggle {
+    margin-left: auto;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    cursor: pointer;
+  }
+  .sidebar-toggle span {
+    display: block; width: 18px; height: 2px; border-radius: 2px;
+    background: #E8A93D;
+    transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .sidebar-toggle-input:checked ~ .sidebar-mobilebar .sidebar-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .sidebar-toggle-input:checked ~ .sidebar-mobilebar .sidebar-toggle span:nth-child(2) { opacity: 0; }
+  .sidebar-toggle-input:checked ~ .sidebar-mobilebar .sidebar-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    z-index: 89;
+    background: rgba(6,14,28,0.55);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+    cursor: default;
+  }
+  .sidebar-toggle-input:checked ~ .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+  .resident-shell { flex-direction: column; }
+  .resident-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(320px, 86vw);
+    height: 100dvh;
+    z-index: 90;
+    transform: translateX(-104%);
+    transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 24px 0 60px -28px rgba(6,14,28,0.6);
+    padding-top: 84px;
+  }
+  .sidebar-toggle-input:checked ~ .resident-shell .resident-sidebar { transform: translateX(0); }
+  .resident-sidebar .sidebar-brand { display: none; }
+  .resident-sidebar .sidebar-link::before { display: none; }
+  .resident-sidebar .sidebar-link.active { background: rgba(255,255,255,0.1); }
+  .resident-sidebar .sidebar-link {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background-color 0.25s cubic-bezier(0.32, 0.72, 0, 1), color 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .sidebar-toggle-input:checked ~ .resident-shell .resident-sidebar .sidebar-link { opacity: 1; transform: translateY(0); }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(1) { transition-delay: 0.06s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(2) { transition-delay: 0.12s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(3) { transition-delay: 0.18s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(4) { transition-delay: 0.24s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(5) { transition-delay: 0.3s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(6) { transition-delay: 0.36s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(7) { transition-delay: 0.42s; }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-nav .sidebar-link:nth-child(8) { transition-delay: 0.48s; }
+  .sidebar-footer {
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .sidebar-toggle-input:checked ~ .resident-shell .sidebar-footer { opacity: 1; transition-delay: 0.5s; }
+}
+.reveal { animation: rise 0.9s cubic-bezier(0.32, 0.72, 0, 1) both; animation-delay: var(--d, 0s); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; }
+  .sidebar-toggle span, .sidebar-backdrop, .resident-sidebar { transition: none; }
+  .resident-sidebar .sidebar-link { opacity: 1; transform: none; }
+}
+</style>
+<input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input" hidden>
+<div class="sidebar-mobilebar">
+  <a href="index.php" class="sidebar-mobile-brand">
+    <span class="sidebar-brand-badge"><img src="../images/logo.png" alt=""></span>
+    <span class="sidebar-brand-name">Barangay 420</span>
+  </a>
+  <label for="sidebar-toggle" class="sidebar-toggle" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </label>
+</div>
+<label for="sidebar-toggle" class="sidebar-backdrop" aria-hidden="true"></label>
+<script>
+(function () {
+  var input = document.getElementById('sidebar-toggle');
+  if (!input) return;
+  function sync() { document.body.style.overflow = input.checked ? 'hidden' : ''; }
+  input.addEventListener('change', sync);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && input.checked) { input.checked = false; sync(); } });
+  var mq = window.matchMedia('(min-width: 761px)');
+  function closeOnDesktop() { if (mq.matches) { input.checked = false; sync(); } }
+  if (mq.addEventListener) mq.addEventListener('change', closeOnDesktop);
+  else if (mq.addListener) mq.addListener(closeOnDesktop);
+})();
+</script>
+<div class="resident-shell">
+  <aside class="resident-sidebar">
+    <a href="index.php" class="sidebar-brand">
+      <span class="sidebar-brand-badge"><img src="../images/logo.png" alt="Barangay 420 logo"></span>
+      <div>
+        <div class="sidebar-brand-name">Barangay 420</div>
+        <div class="sidebar-brand-sub">Resident Portal</div>
+      </div>
+    </a>
+
+    <nav class="sidebar-nav">
+            <a href="index.php" class="sidebar-link ">
+        <span>About</span>
+      </a>
+              <a href="events.php" class="sidebar-link ">
+          <span>Events</span>
+        </a>
+        <a href="dashboard.php" class="sidebar-link active">
+          <span>My Benefits</span>
+        </a>
+        <a href="profile.php" class="sidebar-link ">
+          <span>My Profile</span>
+        </a>
+                </nav>
+
+    <div class="sidebar-footer">
+              <div class="sidebar-name">El d Cer</div>
+        <a href="logout.php" class="sidebar-logout">Log out</a>
+          </div>
+  </aside>
+
+  <div class="resident-shell-main">
+    <main class="resident-main">
+
+<div class="dashboard">
+  <section class="dashboard-welcome">
+    <h1>Welcome, El d Cer</h1>
+    <p style="color:#3C5470; font-size: 16px; margin-top:4px;">Track and apply for your household's benefits here.</p>
+          </section>
+
+        <div class="benefit-summary">
+                                      <div class="benefit-summary-item sum-existing reveal" style="--d:100ms">
+            <div class="benefit-summary-count">1</div>
+            <div>Already a beneficiary</div>
+          </div>
+                                              <div class="benefit-summary-item sum-notqual reveal" style="--d:180ms">
+            <div class="benefit-summary-count">8</div>
+            <div>Not qualified</div>
+          </div>
+                                </div>
+  
+  
+  <section class="dashboard-section">
+    <h2>Qualified to apply</h2>
+    <p class="muted-note">Programs your household matched that are open for applications right now.</p>
+              <div class="benefit-none">No programs are open for you to apply to right now. Anything your household qualifies for appears here automatically - including an Apply button - as soon as the barangay opens it.</div>
+          </section>
+
+  <section class="dashboard-section">
+    <h2>Already a beneficiary</h2>
+    <p class="muted-note">Benefits your household is already enrolled in - no application needed.</p>
+          <div class="benefit-list">
+                      <div class="benefit-card">
+      <div class="benefit-card-head">
+        <div>
+          <div class="benefit-name">Senior Citizen Benefit</div>
+          <div class="benefit-member">For: Isang Isa</div>
+        </div>
+        <div class="benefit-card-actions">
+          <span class="status-badge stamp stamp-approved">Approved</span>
+                      <span class="status-badge status-source" title="How this entry was created">Approved Application</span>
+                            </div>
+      </div>
+              <div class="benefit-desc">Assistance for barangay residents aged 60 and above.</div>
+                    <div class="benefit-desc" style="color:#0B2E5C; font-weight:500;">Isang Isa is listed as a beneficiary of this program.</div>
+                    <div class="benefit-meta">Qualified on September 10, 2026</div>
+                                      <details class="why-check">
+            <summary>Meets the requirements (1)</summary>
+                <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Minimum age</strong><span class="criteria-reason">Meets the program&#039;s minimum age</span></td>
+            <td>At least 60 years old</td>
+            <td>66 years old</td>
+          </tr>
+              </tbody>
+    </table>
+              </details>
+                  </div>
+                  </div>
+      </section>
+  <section class="dashboard-section">
+    <h2>Qualified &mdash; application period ended</h2>
+    <p class="muted-note">Your household still meets these programs' requirements, but the barangay is no longer accepting applications for them.</p>
+              <div class="benefit-none">None right now - every program your household qualifies for is still open for applications.</div>
+          </section>
+
+  <section class="dashboard-section">
+    <h2>Not qualified</h2>
+    <p class="muted-note">Programs your household does not qualify for right now, with the exact requirement that is not met. Judged from the census information your household has on file - update it on the profile page and this is re-checked automatically.</p>
+          <div class="benefit-list">
+                  <div class="benefit-card">
+            <div class="nq-member-head">
+              <span class="nq-member-name">El Cep</span>
+                              <span class="muted-note">age 59</span>
+                          </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">PWD Benefit</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not registered as a person with disability</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Person with disability (PWD) status</strong><span class="criteria-reason">Not registered as a person with disability</span></td>
+            <td>Must be registered as a PWD</td>
+            <td>Not listed as a PWD</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">Senior Citizen Benefit</div>
+                <p class="nq-reason"><strong>Reason:</strong> Below the program&#039;s minimum age</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Minimum age</strong><span class="criteria-reason">Below the program&#039;s minimum age</span></td>
+            <td>At least 60 years old</td>
+            <td>59 years old</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">solo parent</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not listed as a solo parent</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Solo parent status</strong><span class="criteria-reason">Not listed as a solo parent</span></td>
+            <td>Must be listed as a solo parent</td>
+            <td>Not listed as a solo parent</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                      </div>
+                  <div class="benefit-card">
+            <div class="nq-member-head">
+              <span class="nq-member-name">Ano Ket</span>
+                              <span class="muted-note">age 56</span>
+                          </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">PWD Benefit</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not registered as a person with disability</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Person with disability (PWD) status</strong><span class="criteria-reason">Not registered as a person with disability</span></td>
+            <td>Must be registered as a PWD</td>
+            <td>Not listed as a PWD</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">Senior Citizen Benefit</div>
+                <p class="nq-reason"><strong>Reason:</strong> Below the program&#039;s minimum age</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Minimum age</strong><span class="criteria-reason">Below the program&#039;s minimum age</span></td>
+            <td>At least 60 years old</td>
+            <td>56 years old</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">solo parent</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not listed as a solo parent</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Solo parent status</strong><span class="criteria-reason">Not listed as a solo parent</span></td>
+            <td>Must be listed as a solo parent</td>
+            <td>Not listed as a solo parent</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                      </div>
+                  <div class="benefit-card">
+            <div class="nq-member-head">
+              <span class="nq-member-name">Isang Isa</span>
+                              <span class="muted-note">age 66</span>
+                          </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">PWD Benefit</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not registered as a person with disability</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Person with disability (PWD) status</strong><span class="criteria-reason">Not registered as a person with disability</span></td>
+            <td>Must be registered as a PWD</td>
+            <td>Not listed as a PWD</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                                        <div class="nq-program">
+                <div class="nq-program-name">solo parent</div>
+                <p class="nq-reason"><strong>Reason:</strong> Not listed as a solo parent</p>
+                    <table class="criteria-table">
+      <thead>
+        <tr><th>Basis</th><th>Required</th><th>Your information</th></tr>
+      </thead>
+      <tbody>
+                  <tr>
+            <td><strong>Solo parent status</strong><span class="criteria-reason">Not listed as a solo parent</span></td>
+            <td>Must be listed as a solo parent</td>
+            <td>Not listed as a solo parent</td>
+          </tr>
+              </tbody>
+    </table>
+                                    <div class="nq-date"><strong>Date evaluated:</strong> October 1, 2026 (re-checked live each time this page is opened)</div>
+              </div>
+                      </div>
+              </div>
+      </section>
+
+  <section class="dashboard-section">
+    <h2>Applications &amp; decisions</h2>
+    <p class="muted-note">Applications your household has submitted, and the barangay's decisions on them.</p>
+              <div class="benefit-none">No applications submitted and no decisions yet.</div>
+          </section>
+  
+    <section class="dashboard-section">
+    <details class="why-check why-check-all">
+        <summary>Eligibility explained for this household</summary>
+        <p class="muted-note" style="margin-top:8px;">Reasons are judged from the census information your household has on file. If it looks wrong, update your household's details on the profile page - eligibility is re-checked automatically after every change.</p>
+                          <div class="why-member">
+            <strong>El Cep</strong>
+             &middot; age 59                        <ul class="why-list">
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for Senior Citizen Benefit                                       - minimum age 60 (age 59)                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for PWD Benefit                                       - must be a person with disability                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for solo parent                                       - must be a solo parent                                  </li>
+                          </ul>
+          </div>
+                  <div class="why-member">
+            <strong>Ano Ket</strong>
+             &middot; age 56                        <ul class="why-list">
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for Senior Citizen Benefit                                       - minimum age 60 (age 56)                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for PWD Benefit                                       - must be a person with disability                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for solo parent                                       - must be a solo parent                                  </li>
+                          </ul>
+          </div>
+                  <div class="why-member">
+            <strong>Isang Isa</strong>
+             &middot; age 66                        <ul class="why-list">
+                              <li>
+                  <span class="why-pass-ok">Qualifies</span>
+                  for Senior Citizen Benefit                                       - PASS minimum age 60                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for PWD Benefit                                       - must be a person with disability                                  </li>
+                              <li>
+                  <span class="why-pass-no">Does not qualify</span>
+                  for solo parent                                       - must be a solo parent                                  </li>
+                          </ul>
+          </div>
+              </details>
+      </section>
+
+  <section class="dashboard-section">
+    <h2>Upcoming events</h2>
+          <p class="muted-note">No upcoming events posted yet.</p>
+        <a href="events.php" class="link-more">See all events &rarr;</a>
+  </section>
+</div>
+
+<script>
+function openEventModal(id) {
+  document.getElementById('event-modal-' + id).classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+function closeEventModal(id) {
+  document.getElementById('event-modal-' + id).classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.event-modal-backdrop.is-open').forEach(function (el) {
+      el.classList.remove('is-open');
+    });
+    document.body.style.overflow = '';
+  }
+});
+</script>
+
+    </main>
+    <footer class="site-footer">
+  <p>&copy; 2026 Barangay 420. For residents' use only.</p>
+</footer>
+<div class="brgy-dialog-backdrop" id="brgy-dialog" role="dialog" aria-modal="true" aria-hidden="true"
+     onclick="if (event.target === this &amp;&amp; window.brgyDialogCancel) { brgyDialogCancel(); }">
+  <div class="brgy-dialog-shell">
+    <div class="brgy-dialog-core">
+      <div class="brgy-dialog-icon"><span class="brgy-dialog-icon-inner" id="brgy-dialog-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg>
+      </span></div>
+      <span class="brgy-dialog-eyebrow" id="brgy-dialog-eyebrow">Please confirm</span>
+      <h2 class="brgy-dialog-title" id="brgy-dialog-title"></h2>
+      <p class="brgy-dialog-message" id="brgy-dialog-message"></p>
+      <textarea class="brgy-dialog-input" id="brgy-dialog-input" rows="3" hidden></textarea>
+      <p class="brgy-dialog-hint" id="brgy-dialog-hint" hidden></p>
+      <div class="brgy-dialog-actions">
+        <button type="button" class="brgy-dialog-btn brgy-dialog-cancel" id="brgy-dialog-cancel">Cancel</button>
+        <button type="button" class="brgy-dialog-btn brgy-dialog-ok" id="brgy-dialog-ok">
+          <span class="brgy-dialog-ok-label" id="brgy-dialog-ok-label">Confirm</span>
+          <span class="brgy-dialog-ok-icon" id="brgy-dialog-ok-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ============ Confirm dialog - double-bezel dossier ============ */
+.brgy-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 14, 28, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.45s;
+}
+.brgy-dialog-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Outer shell: the machined navy tray. */
+.brgy-dialog-shell {
+  width: 100%;
+  max-width: 450px;
+  padding: 10px;
+  border-radius: 30px;
+  background:
+    radial-gradient(440px 240px at 92% -18%, rgba(232, 169, 61, 0.28), transparent 60%),
+    radial-gradient(360px 220px at -6% 108%, rgba(27, 95, 168, 0.42), transparent 58%),
+    linear-gradient(160deg, #14396E, #071C38 72%);
+  box-shadow: 0 30px 60px -20px rgba(4, 14, 30, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(22px) scale(0.96);
+  transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.brgy-dialog-backdrop.is-open .brgy-dialog-shell { transform: translateY(0) scale(1); }
+
+/* Inner core: the cream paper dossier, concentric radius. */
+.brgy-dialog-core {
+  border-radius: 21px;
+  padding: 34px 34px 30px;
+  background: linear-gradient(180deg, #FDFAF3, #FBF6EC 58%, #F4ECDC);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(46, 36, 24, 0.05);
+}
+
+/* Staggered entry: each child rises from an invisible box. */
+.brgy-dialog-core > * {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: brgyRise 0.7s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+.brgy-dialog-core.d1 > *:nth-child(1) { --d: 40ms; }
+.brgy-dialog-core.d1 > *:nth-child(2) { --d: 120ms; }
+.brgy-dialog-core.d1 > *:nth-child(3) { --d: 170ms; }
+.brgy-dialog-core.d1 > *:nth-child(4) { --d: 220ms; }
+.brgy-dialog-core.d1 > *:nth-child(5) { --d: 270ms; }
+.brgy-dialog-core.d1 > *:nth-child(6) { --d: 320ms; }
+.brgy-dialog-core.d1 > *:nth-child(7) { --d: 370ms; }
+@keyframes brgyRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Icon: a gold bezel disc holding a recessed navy disc. */
+.brgy-dialog-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(140deg, #E8C37F, #C08A2E);
+  box-shadow: 0 8px 20px -8px rgba(192, 138, 46, 0.55);
+}
+.brgy-dialog-icon-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy, #0B2E5C);
+  box-shadow: inset 0 2px 7px rgba(6, 14, 28, 0.4);
+}
+.brgy-dialog-icon-inner svg { width: 24px; height: 24px; stroke: var(--gold, #E8A93D); }
+.brgy-dialog-backdrop.is-danger .brgy-dialog-icon { background: linear-gradient(140deg, #E8A08F, #9A2C2C); }
+.brgy-dialog-backdrop.is-danger .brgy-dialog-icon-inner { background: #7E2424; }
+
+.brgy-dialog-eyebrow {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 22px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8A6A1F;
+  background: rgba(232, 169, 61, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(192, 138, 46, 0.35);
+}
+.brgy-dialog-backdrop.is-danger .brgy-dialog-eyebrow {
+  color: #96413A;
+  background: rgba(154, 44, 44, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(154, 44, 44, 0.3);
+}
+
+.brgy-dialog-title {
+  margin: 12px 0 10px;
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 600;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--navy, #0B2E5C);
+  word-break: break-word;
+}
+.brgy-dialog-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #57493A;
+  word-break: break-word;
+}
+
+.brgy-dialog-input {
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 15px;
+  border: 1px solid rgba(46, 36, 24, 0.14);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.75);
+  font-family: var(--font-sans, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #2E2418;
+  resize: vertical;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.brgy-dialog-input:focus {
+  outline: none;
+  border-color: rgba(192, 138, 46, 0.7);
+  box-shadow: 0 0 0 3px rgba(232, 169, 61, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.brgy-dialog-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--danger, #9A2C2C);
+}
+
+.brgy-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+.brgy-dialog-btn {
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-sans, sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              box-shadow 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.brgy-dialog-btn:active { transform: scale(0.97); }
+.brgy-dialog-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(232, 169, 61, 0.4);
+}
+
+/* Cancel: quiet hairline pill. */
+.brgy-dialog-cancel {
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--navy, #0B2E5C);
+  box-shadow: inset 0 0 0 1px rgba(11, 46, 92, 0.2);
+}
+.brgy-dialog-cancel:hover { background: rgba(11, 46, 92, 0.06); }
+
+/* Confirm: navy pill with a nested trailing icon disc. */
+.brgy-dialog-ok {
+  padding: 8px 8px 8px 22px;
+  border-radius: 999px;
+  background: var(--navy, #0B2E5C);
+  color: #FFFFFF;
+  box-shadow: 0 12px 24px -10px rgba(11, 46, 92, 0.55);
+}
+.brgy-dialog-backdrop.is-danger .brgy-dialog-ok {
+  background: var(--danger, #9A2C2C);
+  box-shadow: 0 12px 24px -10px rgba(154, 44, 44, 0.55);
+}
+.brgy-dialog-ok-icon {
+  width: 34px;
+  height: 34px;
+  margin-left: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.14);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              background-color 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.brgy-dialog-ok-icon svg { width: 15px; height: 15px; stroke: var(--gold, #E8A93D); transition: stroke 0.5s cubic-bezier(0.32, 0.72, 0, 1); }
+.brgy-dialog-ok:hover .brgy-dialog-ok-icon {
+  transform: translate(1px, -1px) scale(1.07);
+  background: var(--gold, #E8A93D);
+}
+.brgy-dialog-ok:hover .brgy-dialog-ok-icon svg { stroke: var(--gold-text, #4A2F04); }
+
+/* Invalid-prompt shake - transform only, never layout properties. */
+@keyframes brgyShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+.brgy-dialog-backdrop.is-shake .brgy-dialog-shell {
+  animation: brgyShake 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brgy-dialog-backdrop,
+  .brgy-dialog-shell,
+  .brgy-dialog-btn,
+  .brgy-dialog-ok-icon,
+  .brgy-dialog-ok-icon svg,
+  .brgy-dialog-core > * {
+    transition: none;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .brgy-dialog-backdrop { padding: 16px; }
+  .brgy-dialog-shell { border-radius: 24px; padding: 8px; }
+  .brgy-dialog-core { border-radius: 17px; padding: 26px 22px 22px; }
+  .brgy-dialog-actions { flex-direction: column-reverse; align-items: stretch; }
+  .brgy-dialog-btn { justify-content: center; }
+}
+</style>
+
+<script>
+(function () {
+  var backdrop  = document.getElementById('brgy-dialog');
+  var core      = backdrop.querySelector('.brgy-dialog-core');
+  var shell     = backdrop.querySelector('.brgy-dialog-shell');
+  var titleEl   = document.getElementById('brgy-dialog-title');
+  var msgEl     = document.getElementById('brgy-dialog-message');
+  var eyebrowEl = document.getElementById('brgy-dialog-eyebrow');
+  var inputEl   = document.getElementById('brgy-dialog-input');
+  var hintEl    = document.getElementById('brgy-dialog-hint');
+  var okBtn     = document.getElementById('brgy-dialog-ok');
+  var okLabel   = document.getElementById('brgy-dialog-ok-label');
+  var cancelBtn = document.getElementById('brgy-dialog-cancel');
+  var iconCheck = document.getElementById('brgy-dialog-icon');
+  var okIcon    = document.getElementById('brgy-dialog-ok-icon');
+
+  var resolveFn = null;
+  var mode = null;
+  var lastFocused = null;
+
+  function reopenAnimation() {
+    core.classList.remove('d1');
+    void core.offsetWidth;
+    core.classList.add('d1');
+  }
+
+  function openDialog(m, opts) {
+    mode = m;
+    backdrop.classList.remove('is-danger', 'is-shake');
+    if (opts.danger) { backdrop.classList.add('is-danger'); }
+
+    titleEl.textContent = opts.title || 'Please confirm';
+    msgEl.textContent = opts.message || '';
+    okLabel.textContent = opts.confirmLabel || (m === 'prompt' ? 'Submit' : 'Confirm');
+    eyebrowEl.textContent = m === 'prompt' ? 'Details required' : 'Please confirm';
+    inputEl.hidden = m !== 'prompt';
+    hintEl.hidden = true;
+    inputEl.value = '';
+    if (m === 'prompt') { inputEl.placeholder = opts.placeholder || ''; }
+
+    iconCheck.innerHTML = (m === 'prompt')
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4"/><path d="m5.5 10.5 6.5-6.5 6.5 6.5"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg>';
+
+    lastFocused = document.activeElement;
+    backdrop.setAttribute('aria-hidden', 'false');
+    backdrop.classList.add('is-open');
+    reopenAnimation();
+    cancelBtn.focus();
+    if (m === 'prompt') { inputEl.focus(); }
+
+    return new Promise(function (resolve) { resolveFn = resolve; });
+  }
+
+  function closeDialog(value) {
+    if (resolveFn === null) { return; }
+    backdrop.classList.remove('is-open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    var r = resolveFn;
+    resolveFn = null;
+    if (lastFocused && lastFocused.focus) { lastFocused.focus(); }
+    window.setTimeout(function () { r(value); }, 1);
+  }
+
+  window.brgyDialogCancel = function () { closeDialog(null); };
+
+  window.brgyConfirm = function (opts) { return openDialog('confirm', opts || {}); };
+  window.brgyPrompt  = function (opts) { return openDialog('prompt',  opts || {}); };
+
+  okBtn.addEventListener('click', function () {
+    if (mode === 'prompt') {
+      var value = inputEl.value.trim();
+      if (value === '') {
+        backdrop.classList.remove('is-shake');
+        void backdrop.offsetWidth;
+        backdrop.classList.add('is-shake');
+        hintEl.textContent = 'Please enter a reason - it is shown to the resident.';
+        hintEl.hidden = false;
+        inputEl.focus();
+        return;
+      }
+      closeDialog(value);
+    } else {
+      closeDialog(true);
+    }
+  });
+
+  cancelBtn.addEventListener('click', function () { closeDialog(null); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!backdrop.classList.contains('is-open')) { return; }
+    if (e.key === 'Escape') { closeDialog(null); return; }
+    if (e.key !== 'Tab') { return; }
+    var focusables = [cancelBtn, okBtn];
+    var first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
+  /* Delegated: any form with data-confirm gets confirmed before submit.
+     Works for dynamically inserted forms (e.g. the events live feed).
+
+     The confirmed form is re-dispatched with form.requestSubmit(submitter)
+     instead of form.submit(): the programmatic submit() silently drops the
+     clicked submit button's name/value, which several server handlers rely
+     on (e.g. Accounts reads $_POST['action'] straight off the button), so
+     with submit() those archives did nothing at all. requestSubmit() keeps
+     the real submitter, so the button travels with the POST. */
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || !form.getAttribute || !form.hasAttribute('data-confirm')) { return; }
+
+    // Second dispatch from requestSubmit() below - the guard was consumed,
+    // let the browser proceed with the native submission.
+    if (form.dataset.brgyConfirmed === '1') {
+      delete form.dataset.brgyConfirmed;
+      return;
+    }
+
+    e.preventDefault();
+    window.brgyConfirm({
+      title:        form.getAttribute('data-confirm-title')  || 'Please confirm',
+      message:      form.getAttribute('data-confirm-message') || '',
+      confirmLabel: form.getAttribute('data-confirm-label')  || 'Continue',
+      danger:       form.hasAttribute('data-confirm-danger'),
+    }).then(function (ok) {
+      if (!ok) { return; }
+      if (form.requestSubmit) {
+        form.dataset.brgyConfirmed = '1';
+        // requestSubmit() dispatches the second submit event synchronously
+        // (when the form passes native validation). Clearing the guard right
+        // after it returns closes the race where a native-validation failure
+        // would otherwise leave the guard set for a second, letting the very
+        // next click submit without any confirmation at all.
+        form.requestSubmit(e.submitter || undefined);
+        delete form.dataset.brgyConfirmed;
+      } else {
+        form.submit();
+      }
+    });
+  });
+})();
+</script>
+  </div>
+</div>
+</body>
+</html>

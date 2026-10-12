@@ -1,0 +1,5 @@
+# Backup files contain a full copy of every resident's data. Nothing
+# here should ever be reachable by a direct URL - only download-backup.php
+# (which checks the requester is a logged-in Admin first) may serve
+# these files.
+Require all denied
